@@ -1,0 +1,170 @@
+{
+  "spotted_dove": {
+    "species_id": "spotted_dove",
+    "common_name": "Spotted Dove",
+    "scientific_name": "Spilopelia chinensis",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "rose_ringed_parakeet": {
+    "species_id": "rose_ringed_parakeet",
+    "common_name": "Rose-ringed Parakeet",
+    "scientific_name": "Psittacula krameri",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "asian_koel": {
+    "species_id": "asian_koel",
+    "common_name": "Asian Koel",
+    "scientific_name": "Eudynamys scolopaceus",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "common_cuckoo": {
+    "species_id": "common_cuckoo",
+    "common_name": "Common Cuckoo",
+    "scientific_name": "Cuculus canorus",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "white_naped_woodpecker": {
+    "species_id": "white_naped_woodpecker",
+    "common_name": "White-naped Woodpecker",
+    "scientific_name": "Chrysocolaptes festivus",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "spotted_owlet": {
+    "species_id": "spotted_owlet",
+    "common_name": "Spotted Owlet",
+    "scientific_name": "Athene brama",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "rock_eagle_owl": {
+    "species_id": "rock_eagle_owl",
+    "common_name": "Rock Eagle-Owl",
+    "scientific_name": "Bubo bengalensis",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "rock_pigeon": {
+    "species_id": "rock_pigeon",
+    "common_name": "Rock Pigeon",
+    "scientific_name": "Columba livia",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "indian_peafowl": {
+    "species_id": "indian_peafowl",
+    "common_name": "Indian Peafowl",
+    "scientific_name": "Pavo cristatus",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "indian_grey_hornbill": {
+    "species_id": "indian_grey_hornbill",
+    "common_name": "Indian Grey Hornbill",
+    "scientific_name": "Ocyceros birostris",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "grey_junglefowl": {
+    "species_id": "grey_junglefowl",
+    "common_name": "Grey Junglefowl",
+    "scientific_name": "Gallus sonneratii",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "peregrine_falcon": {
+    "species_id": "peregrine_falcon",
+    "common_name": "Peregrine Falcon",
+    "scientific_name": "Falco peregrinus",
+    "audio_embedding_count": 0,
+    "created_at": "2026-09-03T18:35:35.743228+00:00"
+  },
+  "Asian Koel": {
+    "species_id": "Asian Koel",
+    "common_name": "Asian Koel",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:35.751644+00:00"
+  },
+  "Common Cuckoo": {
+    "species_id": "Common Cuckoo",
+    "common_name": "Common Cuckoo",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:51.214052+00:00"
+  },
+  "Grey Indian HornBill": {
+    "species_id": "Grey Indian HornBill",
+    "common_name": "Grey Indian Hornbill",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:52.288611+00:00"
+  },
+  "Grey Junglefowl Clips": {
+    "species_id": "Grey Junglefowl Clips",
+    "common_name": "Grey Junglefowl Clips",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:53.062561+00:00"
+  },
+  "Indian Peafoul": {
+    "species_id": "Indian Peafoul",
+    "common_name": "Indian Peafoul",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:53.400943+00:00"
+  },
+  "Indian Robin": {
+    "species_id": "Indian Robin",
+    "common_name": "Indian Robin",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:54.505937+00:00"
+  },
+  "Peregrine Falcon  Clips": {
+    "species_id": "Peregrine Falcon  Clips",
+    "common_name": "Peregrine Falcon  Clips",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:55.512915+00:00"
+  },
+  "Rock Eagle": {
+    "species_id": "Rock Eagle",
+    "common_name": "Rock Eagle",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:55.761985+00:00"
+  },
+  "Rose-ringed Parakeet": {
+    "species_id": "Rose-ringed Parakeet",
+    "common_name": "Rose-Ringed Parakeet",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:56.871178+00:00"
+  },
+  "Spotted Dove_": {
+    "species_id": "Spotted Dove_",
+    "common_name": "Spotted Dove ",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:57.843647+00:00"
+  },
+  "Spotted Owlet": {
+    "species_id": "Spotted Owlet",
+    "common_name": "Spotted Owlet",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:58.849893+00:00"
+  },
+  "White-naped Woodpecker": {
+    "species_id": "White-naped Woodpecker",
+    "common_name": "White-Naped Woodpecker",
+    "scientific_name": "",
+    "audio_embedding_count": 60,
+    "created_at": "2026-09-03T18:35:59.868222+00:00"
+  }
+}
