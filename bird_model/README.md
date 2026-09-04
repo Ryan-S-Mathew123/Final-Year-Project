@@ -1,96 +1,120 @@
-# Bird Monitoring — Audio Embedding Recognition
+# Bird Monitoring: Audio Bird Species Recognition
 
-Audio-only embedding-based bird species recognition for 12 initial species.
+This project identifies bird species from uploaded or recorded audio. It contains two recognition workflows:
 
-## Dataset
+- A browser application using MFCC features and a Random Forest classifier.
+- A CLAP audio-embedding workflow for command-line prediction and prototype-based search.
 
-Each species currently contains 60 recordings of approximately 5 seconds:
+The project currently contains 12 species: Spotted Dove, Rose-ringed Parakeet, Asian Koel, Common Cuckoo, White-naped Woodpecker, Spotted Owlet, Rock Eagle-Owl, Rock Pigeon, Indian Peafowl, Indian Grey Hornbill, Grey Junglefowl, and Peregrine Falcon.
 
-- spotted_dove
-- rose_ringed_parakeet
-- asian_koel
-- common_cuckoo
-- white_naped_woodpecker
-- spotted_owlet
-- rock_eagle_owl
-- rock_pigeon
-- indian_peafowl
-- indian_grey_hornbill
-- grey_junglefowl
-- peregrine_falcon
+## Project location
 
-Expected total: 720 recordings.
+Run all commands from the project directory:
 
-## Setup
+```powershell
+cd "C:\Btech\Final Year Project\Final-Year-Project"
+```
 
-Python 3.10+:
+## Installation (Windows PowerShell)
 
-```bash
+Python 3.10 or newer is recommended.
+
+```powershell
 python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
+.\venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-On Linux/macOS:
+If PowerShell blocks activation, run this once for the current terminal:
 
-```bash
-source venv/bin/activate
-pip install -r requirements.txt
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
-## Run
+The repository already includes `venv` on some machines, but creating a fresh environment avoids dependency mismatches.
 
-Validate:
+## Browser application
 
-```bash
+The web app loads `model.pkl` and `label_encoder.pkl` from the project root. Start it with:
+
+```powershell
+python train.py
+python -m uvicorn app:app --reload
+```
+
+Open `http://127.0.0.1:8000` in a browser and upload an audio file. Supported formats include WAV, MP3, OGG, FLAC, and M4A.
+
+Run `python train.py` again whenever the folders in `dataset/` change. The training script searches `dataset/` first and writes the updated model files to the project root.
+
+## Embedding workflow
+
+The embedding workflow uses `datasets/audio/` and stores generated vectors in `embeddings/` and metadata in `metadata/`.
+It additionally requires PyTorch and Hugging Face Transformers:
+
+```powershell
+python -m pip install torch transformers
+```
+
+Validate the dataset:
+
+```powershell
 python scripts/validate_dataset.py
 ```
 
-Generate embeddings:
+Generate audio embeddings:
 
-```bash
+```powershell
 python scripts/generate_audio_embeddings.py
 ```
 
-Predict:
+Predict from an audio file:
 
-```bash
-python scripts/predict_audio.py path/to/test.wav
+```powershell
+python scripts/predict_audio.py "C:\path\to\test.wav"
 ```
 
-Calibrate unknown threshold:
+Calibrate the unknown-species threshold:
 
-```bash
+```powershell
 python scripts/calibrate_thresholds.py
 ```
 
-Add a species without retraining:
+Add a species, place its recordings in the generated folder, and rebuild embeddings:
 
-```bash
+```powershell
 python scripts/add_species.py --species oriental_magpie_robin
-```
-
-Place recordings into the created folder, then regenerate embeddings:
-
-```bash
 python scripts/generate_audio_embeddings.py
 ```
 
-Or:
+Use `--generate` with `add_species.py` to perform both steps when the recordings are already present.
 
-```bash
-python scripts/add_species.py --species oriental_magpie_robin --generate
+## Embedding settings
+
+Edit `config.py` to change the search mode:
+
+- `individual`: compare against every reference recording.
+- `prototype`: compare against one mean normalized embedding per species.
+
+If the maximum cosine similarity is below `AUDIO_UNKNOWN_THRESHOLD`, the classifier returns `UNKNOWN`.
+
+## Tests
+
+Run the available tests from the project directory:
+
+```powershell
+python -m pytest
 ```
 
-The encoder is never retrained. New species are added by generating embeddings and rebuilding species prototypes.
+## Main folders
 
-## Search modes
-
-Set in `config.py`:
-
-- `individual`: search against every reference recording.
-- `prototype`: search against one mean normalized embedding per species.
-
-## Unknown detection
-
-If maximum cosine similarity is below `AUDIO_UNKNOWN_THRESHOLD`, prediction returns `UNKNOWN`.
+| Path | Purpose |
+| --- | --- |
+| `app.py` | FastAPI web application |
+| `train.py` | MFCC and Random Forest training |
+| `dataset/` | Input audio for the browser model |
+| `datasets/audio/` | Input audio for the embedding workflow |
+| `scripts/` | Dataset, embedding, and prediction commands |
+| `src/` | Embedding workflow implementation |
+| `templates/` | Web interface |
+| `model.pkl` | Trained Random Forest model |
+| `label_encoder.pkl` | Saved species label encoder |
