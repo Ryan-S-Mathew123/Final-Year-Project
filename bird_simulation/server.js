@@ -1,0 +1,13 @@
+// Zero-dependency local server. It exposes the persisted configuration model to
+// other clients at /api/config and serves the dashboard from this directory.
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const root = __dirname;
+const configFile = path.join(root, 'simulation-config.json');
+const defaults = {environment:{width:900,height:560},population:{minBirdCount:1,maxBirdCount:3,probabilities:{1:70,2:25,3:5},minimumInitialSeparation:115},movement:{minSpeed:28,maxSpeed:52,directionChangeFrequency:.28,maxDirectionChangeAngle:65,smoothing:.1,boundaryAvoidanceDistance:90,trailLength:70},sound:{minEmissionInterval:1.1,maxEmissionInterval:2.5,visualPropagationSpeed:190},observations:{measurementNoise:7,noiseModel:'gaussian',signalRange:560},localization:{minimumRequiredDevices:3,updateFrequency:3,estimationSmoothing:.2},ghost:{smoothingEnabled:true,interpolationSpeed:130,maximumVisualCorrectionRate:190,visibilityTimeout:9},randomness:{seed:null}};
+const merge=(a,b)=>{for(const[k,v]of Object.entries(b||{}))a[k]=v&&typeof v==='object'&&!Array.isArray(v)?merge(a[k]||{},v):v;return a};
+const read=()=>{try{return merge(structuredClone(defaults),JSON.parse(fs.readFileSync(configFile,'utf8')))}catch{return structuredClone(defaults)}};
+const valid=c=>{const p=c?.population?.probabilities||{},w=Object.values(p);return w.length===3&&w.every(x=>Number.isFinite(+x)&&+x>=0)&&w.some(x=>+x>0)};
+const type={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8'};
+http.createServer((req,res)=>{if(req.url==='/api/config'&&req.method==='GET'){res.writeHead(200,{'content-type':'application/json'});return res.end(JSON.stringify(read()))}if(req.url==='/api/config'&&req.method==='PUT'){let body='';req.on('data',c=>body+=c);return req.on('end',()=>{try{const next=merge(read(),JSON.parse(body));if(!valid(next))throw Error('Probabilities must be non-negative and at least one must be greater than zero.');fs.writeFileSync(configFile,JSON.stringify(next,null,2));res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(next))}catch(e){res.writeHead(400,{'content-type':'application/json'});res.end(JSON.stringify({error:e.message}))}})}let file=req.url==='/'?'index.html':decodeURIComponent(req.url).replace(/^\/+/,''),full=path.resolve(root,file);if(!full.startsWith(root)||!fs.existsSync(full)){res.writeHead(404);return res.end('Not found')}res.writeHead(200,{'content-type':type[path.extname(full)]||'application/octet-stream'});fs.createReadStream(full).pipe(res)}).listen(4173,()=>console.log('FlockSense running at http://localhost:4173'));
