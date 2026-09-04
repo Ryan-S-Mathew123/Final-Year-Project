@@ -1,0 +1,7 @@
+services:
+  bird-localization:
+    build: .
+    container_name: bird-localization-server
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
