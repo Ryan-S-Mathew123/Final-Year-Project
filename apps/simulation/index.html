@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlockSense — Multi-Bird Localization</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div><span class="eyebrow">ACOUSTIC LOCALIZATION LAB</span><h1>FlockSense</h1></div>
+    <div class="header-status"><span id="runDot" class="dot"></span><span id="runStatus">Ready</span><button id="startBtn" class="primary">Start simulation</button><button id="resetBtn">Generate scenario</button></div>
+  </header>
+  <main>
+    <section class="workspace">
+      <div class="metrics">
+        <article><span>ACTIVE BIRDS</span><strong id="activeBirds">0</strong><small id="probabilitySummary">1: 70% · 2: 25% · 3: 5%</small></article>
+        <article><span>ACTIVE DEVICES</span><strong id="deviceCount">0</strong><small>Click the map to place devices</small></article>
+        <article><span>EVENTS LOCALIZED</span><strong id="eventsCount">0</strong><small id="eventStrategy">Events are time-separated per bird</small></article>
+        <article><span>MEAN RAW ERROR</span><strong id="meanError">—</strong><small>Uses raw estimate, not ghost display</small></article>
+      </div>
+      <div class="map-card">
+        <div class="map-toolbar"><div><h2>Simulation field</h2><p>Click to add a listening device · Shift + click to remove nearest</p></div><div class="legend"><span><i class="wave"></i>Sound wave</span><span><i class="real"></i>● Real bird</span><span><i class="ghost"></i>○ Prediction</span><span><i class="device"></i>◇ Device</span></div></div>
+        <canvas id="field" width="900" height="560" aria-label="Bird simulation field"></canvas>
+      </div>
+      <div class="info-row"><section class="panel"><div class="panel-heading"><h2>Bird tracking</h2><span>Ground truth is simulation-only</span></div><div id="birdCards" class="bird-cards"></div></section><section class="panel event-panel"><div class="panel-heading"><h2>Event pipeline</h2><span>Latest independent events</span></div><div id="eventLog" class="event-log"></div></section></div>
+    </section>
+    <aside class="config"><div class="config-title"><div><span class="eyebrow">CENTRALIZED CONFIGURATION</span><h2>Simulation controls</h2></div><button id="restoreBtn" class="text-btn">Restore defaults</button></div><form id="configForm">
+      <fieldset><legend>Bird population <em>Applies on next reset</em></legend><div class="grid3"><label>1 bird probability (%)<input data-path="population.probabilities.1" type="number" min="0" max="100" step="1"></label><label>2 birds probability (%)<input data-path="population.probabilities.2" type="number" min="0" max="100" step="1"></label><label>3 birds probability (%)<input data-path="population.probabilities.3" type="number" min="0" max="100" step="1"></label></div><label>Minimum initial separation <span>units</span><input data-path="population.minimumInitialSeparation" type="number" min="1" max="400" step="1"></label></fieldset>
+      <fieldset><legend>Bird movement <em>Dynamic</em></legend><div class="grid2"><label>Minimum speed <span>u/s</span><input data-path="movement.minSpeed" type="number" min="1" max="200"></label><label>Maximum speed <span>u/s</span><input data-path="movement.maxSpeed" type="number" min="1" max="250"></label><label>Direction change <span>changes/s</span><input data-path="movement.directionChangeFrequency" type="number" min="0" max="5" step=".01"></label><label>Maximum turn <span>degrees</span><input data-path="movement.maxDirectionChangeAngle" type="number" min="1" max="180"></label><label>Heading smoothing <span>0–1</span><input data-path="movement.smoothing" type="number" min=".01" max="1" step=".01"></label><label>Boundary margin <span>units</span><input data-path="movement.boundaryAvoidanceDistance" type="number" min="1" max="300"></label></div><label>Trail length <span>points</span><input data-path="movement.trailLength" type="number" min="5" max="300"></label></fieldset>
+      <fieldset><legend>Sound & observations <em>Dynamic</em></legend><div class="grid2"><label>Min emission interval <span>s</span><input data-path="sound.minEmissionInterval" type="number" min=".2" max="60" step=".1"></label><label>Max emission interval <span>s</span><input data-path="sound.maxEmissionInterval" type="number" min=".2" max="60" step=".1"></label><label>Wave propagation <span>u/s</span><input data-path="sound.visualPropagationSpeed" type="number" min="20" max="1000"></label><label>Measurement noise <span>units</span><input data-path="observations.measurementNoise" type="number" min="0" max="100" step=".1"></label><label>Signal range <span>units</span><input data-path="observations.signalRange" type="number" min="10" max="2000"></label></div></fieldset>
+      <fieldset><legend>Localization & ghost <em>Dynamic</em></legend><div class="grid2"><label>Minimum devices<input data-path="localization.minimumRequiredDevices" type="number" min="3" max="12"></label><label>Update frequency <span>Hz</span><input data-path="localization.updateFrequency" type="number" min=".1" max="20" step=".1"></label><label>Ghost interpolation <span>u/s</span><input data-path="ghost.interpolationSpeed" type="number" min="1" max="500"></label><label>Visual correction limit <span>u/s</span><input data-path="ghost.maximumVisualCorrectionRate" type="number" min="1" max="1000"></label><label>Ghost stale timeout <span>s</span><input data-path="ghost.visibilityTimeout" type="number" min="1" max="120"></label><label class="check">Smooth ghost<input data-path="ghost.smoothingEnabled" type="checkbox"></label></div></fieldset>
+      <fieldset><legend>Randomness <em>Applies on next reset</em></legend><label class="check">Use random seed<input id="seedEnabled" type="checkbox"></label><label>Seed <input id="seedValue" type="text" maxlength="40" placeholder="e.g. migration-2026"></label></fieldset>
+    </form><div id="configMessage" class="config-message">Settings saved automatically.</div>
+  </aside>
+  </main><script src="app.js"></script>
+</body></html>

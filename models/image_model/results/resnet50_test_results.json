@@ -1,0 +1,288 @@
+{
+    "model": "resnet50",
+    "test_images": 1624,
+    "classes": [
+        "asian_koel",
+        "common_cuckoo",
+        "grey_junglefowl",
+        "indian_grey_hornbill",
+        "indian_peafowl",
+        "indian_robin",
+        "peregrine_falcon",
+        "rock_eagle_owl",
+        "rose_ringed_parakeet",
+        "spotted_dove",
+        "spotted_owlet",
+        "white_naped_woodpecker"
+    ],
+    "accuracy": 0.9107142857142857,
+    "precision_weighted": 0.9123740027535181,
+    "recall_weighted": 0.9107142857142857,
+    "f1_weighted": 0.9106990622857674,
+    "precision_macro": 0.9172623933009613,
+    "recall_macro": 0.9115863765863765,
+    "f1_macro": 0.91354956292371,
+    "total_parameters": 23532620,
+    "trainable_parameters": 23532620,
+    "checkpoint_size_mb": 90.07528972625732,
+    "total_inference_time_seconds": 11.561689300404396,
+    "average_inference_time_ms": 7.119266810593841,
+    "images_per_second": 140.46390261872864,
+    "classification_report": {
+        "asian_koel": {
+            "precision": 0.8843537414965986,
+            "recall": 0.8666666666666667,
+            "f1-score": 0.8754208754208754,
+            "support": 150.0
+        },
+        "common_cuckoo": {
+            "precision": 0.9312977099236641,
+            "recall": 0.8133333333333334,
+            "f1-score": 0.8683274021352313,
+            "support": 150.0
+        },
+        "grey_junglefowl": {
+            "precision": 0.9705882352941176,
+            "recall": 0.9,
+            "f1-score": 0.9339622641509434,
+            "support": 110.0
+        },
+        "indian_grey_hornbill": {
+            "precision": 0.8383233532934131,
+            "recall": 0.9333333333333333,
+            "f1-score": 0.8832807570977917,
+            "support": 150.0
+        },
+        "indian_peafowl": {
+            "precision": 0.94,
+            "recall": 0.94,
+            "f1-score": 0.94,
+            "support": 150.0
+        },
+        "indian_robin": {
+            "precision": 0.9161290322580645,
+            "recall": 0.9466666666666667,
+            "f1-score": 0.9311475409836065,
+            "support": 150.0
+        },
+        "peregrine_falcon": {
+            "precision": 0.8782051282051282,
+            "recall": 0.9133333333333333,
+            "f1-score": 0.8954248366013072,
+            "support": 150.0
+        },
+        "rock_eagle_owl": {
+            "precision": 0.8932038834951457,
+            "recall": 0.9292929292929293,
+            "f1-score": 0.9108910891089109,
+            "support": 99.0
+        },
+        "rose_ringed_parakeet": {
+            "precision": 0.9266666666666666,
+            "recall": 0.9266666666666666,
+            "f1-score": 0.9266666666666666,
+            "support": 150.0
+        },
+        "spotted_dove": {
+            "precision": 0.9139072847682119,
+            "recall": 0.92,
+            "f1-score": 0.9169435215946844,
+            "support": 150.0
+        },
+        "spotted_owlet": {
+            "precision": 0.9144736842105263,
+            "recall": 0.9266666666666666,
+            "f1-score": 0.9205298013245033,
+            "support": 150.0
+        },
+        "white_naped_woodpecker": {
+            "precision": 1.0,
+            "recall": 0.9230769230769231,
+            "f1-score": 0.96,
+            "support": 65.0
+        },
+        "accuracy": 0.9107142857142857,
+        "macro avg": {
+            "precision": 0.9172623933009613,
+            "recall": 0.9115863765863765,
+            "f1-score": 0.91354956292371,
+            "support": 1624.0
+        },
+        "weighted avg": {
+            "precision": 0.9123740027535181,
+            "recall": 0.9107142857142857,
+            "f1-score": 0.9106990622857674,
+            "support": 1624.0
+        }
+    },
+    "confusion_matrix": [
+        [
+            130,
+            3,
+            1,
+            6,
+            1,
+            2,
+            0,
+            2,
+            1,
+            3,
+            1,
+            0
+        ],
+        [
+            5,
+            122,
+            1,
+            5,
+            3,
+            1,
+            8,
+            1,
+            1,
+            2,
+            1,
+            0
+        ],
+        [
+            0,
+            0,
+            99,
+            1,
+            2,
+            5,
+            1,
+            2,
+            0,
+            0,
+            0,
+            0
+        ],
+        [
+            2,
+            0,
+            0,
+            140,
+            1,
+            0,
+            0,
+            1,
+            3,
+            0,
+            3,
+            0
+        ],
+        [
+            2,
+            0,
+            1,
+            0,
+            141,
+            1,
+            1,
+            1,
+            2,
+            0,
+            1,
+            0
+        ],
+        [
+            2,
+            0,
+            0,
+            2,
+            1,
+            142,
+            0,
+            0,
+            1,
+            2,
+            0,
+            0
+        ],
+        [
+            1,
+            1,
+            0,
+            2,
+            0,
+            1,
+            137,
+            3,
+            0,
+            2,
+            3,
+            0
+        ],
+        [
+            0,
+            2,
+            0,
+            1,
+            0,
+            0,
+            3,
+            92,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            1,
+            0,
+            0,
+            3,
+            0,
+            1,
+            3,
+            0,
+            139,
+            0,
+            3,
+            0
+        ],
+        [
+            2,
+            3,
+            0,
+            3,
+            0,
+            1,
+            1,
+            0,
+            1,
+            138,
+            1,
+            0
+        ],
+        [
+            2,
+            0,
+            0,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            1,
+            139,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            3,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            0,
+            60
+        ]
+    ]
+}

@@ -1,0 +1,58 @@
+[
+    {
+        "model": "resnet50",
+        "accuracy": 0.9107142857142857,
+        "precision_weighted": 0.9123740027535181,
+        "recall_weighted": 0.9107142857142857,
+        "f1_weighted": 0.9106990622857674,
+        "precision_macro": 0.9172623933009613,
+        "recall_macro": 0.9115863765863765,
+        "f1_macro": 0.91354956292371,
+        "parameters": 23532620,
+        "checkpoint_size_mb": 90.07528972625732,
+        "inference_ms": 7.119266810593841,
+        "images_per_second": 140.46390261872864
+    },
+    {
+        "model": "efficientnet",
+        "accuracy": 0.8922413793103449,
+        "precision_weighted": 0.8929561957977475,
+        "recall_weighted": 0.8922413793103449,
+        "f1_weighted": 0.8923943125756025,
+        "precision_macro": 0.8999416843601588,
+        "recall_macro": 0.8972286972286971,
+        "f1_macro": 0.898374266129104,
+        "parameters": 4022920,
+        "checkpoint_size_mb": 15.634699821472168,
+        "inference_ms": 1.7917122536458148,
+        "images_per_second": 558.1253340011368
+    },
+    {
+        "model": "mobilenet",
+        "accuracy": 0.8565270935960592,
+        "precision_weighted": 0.8605730051372489,
+        "recall_weighted": 0.8565270935960592,
+        "f1_weighted": 0.8570562325873845,
+        "precision_macro": 0.8671023891432874,
+        "recall_macro": 0.8621108521108521,
+        "f1_macro": 0.8632489949540184,
+        "parameters": 4217404,
+        "checkpoint_size_mb": 16.286561012268066,
+        "inference_ms": 0.7998425491427168,
+        "images_per_second": 1250.246065393514
+    },
+    {
+        "model": "convnext",
+        "accuracy": 0.9285714285714286,
+        "precision_weighted": 0.9297635251185472,
+        "recall_weighted": 0.9285714285714286,
+        "f1_weighted": 0.9287729455073136,
+        "precision_macro": 0.9340512736805695,
+        "recall_macro": 0.9297060347060347,
+        "f1_macro": 0.9314854026061621,
+        "parameters": 27829356,
+        "checkpoint_size_mb": 106.22564220428467,
+        "inference_ms": 12.163971428576744,
+        "images_per_second": 82.20999250711047
+    }
+]
