@@ -1,11 +1,12 @@
 import asyncio, threading, time
+import tempfile
 from collections import deque
 from pathlib import Path
 import numpy as np
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, File, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from classifier import BirdClassifier
+from classifier import BirdClassifier, ModelClassifier
 from localization import estimate_delay,multilateration
 
 FS=44100; MAX_SAMPLES=FS*10; WINDOW=FS*2
@@ -15,6 +16,7 @@ buffers={}
 connected=set()
 last=0.0
 classifier=BirdClassifier()
+model_classifier=ModelClassifier()
 result={"status":"Ready — add phones or connect phone apps","species":"Waiting","confidence":0.0,"position":None,"error_radius":None}
 
 class PhoneCreate(BaseModel):
@@ -41,6 +43,32 @@ def add_phone(pid,x=0,y=0):
 
 @app.get("/")
 async def home(): return FileResponse(Path(__file__).parent/"dashboard"/"index.html")
+
+async def save_upload(upload):
+    suffix=Path(upload.filename or "upload").suffix
+    with tempfile.NamedTemporaryFile(delete=False,suffix=suffix) as temp:
+        temp.write(await upload.read())
+        return Path(temp.name)
+
+@app.post("/classify/audio")
+async def classify_audio(audio:UploadFile=File(...)):
+    path=await save_upload(audio)
+    try:
+        return model_classifier.classify_audio(path)
+    except Exception as e:
+        raise HTTPException(400,f"Could not classify audio: {e}")
+    finally:
+        path.unlink(missing_ok=True)
+
+@app.post("/classify/image")
+async def classify_image(image:UploadFile=File(...)):
+    path=await save_upload(image)
+    try:
+        return model_classifier.classify_image(path)
+    except Exception as e:
+        raise HTTPException(400,f"Could not classify image: {e}")
+    finally:
+        path.unlink(missing_ok=True)
 
 @app.get("/phones")
 async def get_phones():

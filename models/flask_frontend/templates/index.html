@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bird Model Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div><p class="kicker">COMPARATIVE EVALUATION LAB</p><h1>Bird model intelligence, side by side.</h1><p class="lede">Upload one sample and see how every trained model interprets it, where they agree, and how quickly they respond.</p></div>
+      <div class="system-chip"><span class="pulse"></span><span>Inference device</span><strong>{{ device }}</strong></div>
+    </header>
+    {% if load_errors %}<div class="notice warning"><strong>Some models are unavailable.</strong><span>{{ load_errors|join(' | ') }}</span></div>{% endif %}
+    <nav class="tabs" aria-label="Analysis type"><button class="tab active" data-tab="audio">Audio analysis</button><button class="tab" data-tab="image">Image analysis</button></nav>
+    <section class="upload-panel">
+      <div class="upload-copy"><span class="section-number">01</span><div><h2 id="uploadTitle">Upload a bird recording</h2><p id="uploadHint">WAV, MP3, OGG, FLAC, or M4A. The four audio models use the same 40-feature MFCC representation.</p></div></div>
+      <div class="dropzone" id="dropzone"><input id="fileInput" type="file" accept="audio/wav,audio/mpeg,audio/ogg,audio/flac,audio/mp4"><div class="drop-icon" id="dropIcon">↥</div><strong id="dropText">Drop a file here or browse</strong><span id="fileMeta">Maximum recommended size: 50 MB</span></div>
+      <div class="preview-row"><audio id="audioPreview" controls hidden></audio><img id="imagePreview" alt="Selected bird preview" hidden><button id="analyzeBtn" class="analyze" disabled>Analyze sample <span>→</span></button></div>
+    </section>
+    <section id="results" class="results" hidden>
+      <div class="summary"><div><p class="kicker">EXECUTIVE SUMMARY</p><h2 id="summaryTitle">Consensus is ready</h2><p id="summaryText"></p></div><div class="consensus-species" id="consensusSpecies">—</div></div>
+      <div class="results-heading"><div><span class="section-number">02</span><h2>Model comparison</h2></div><span id="resultMeta"></span></div>
+      <div id="modelGrid" class="model-grid"></div>
+    </section>
+    <div id="status" class="status" role="status"></div>
+  </main>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

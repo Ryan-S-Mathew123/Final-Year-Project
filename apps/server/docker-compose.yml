@@ -1,6 +1,8 @@
 services:
   bird-localization:
-    build: .
+    build:
+      context: ../..
+      dockerfile: apps/server/Dockerfile
     container_name: bird-localization-server
     ports:
       - "8000:8000"
