@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bird Model Lab — Video Analysis</title>
+  <meta name="description" content="Upload a bird video to run multimodal analysis. Frames are classified by all four vision models while the extracted audio is evaluated by all four audio models.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="kicker">MULTIMODAL EVALUATION LAB</p>
+        <h1>Video intelligence, frame by frame.</h1>
+        <p class="lede">Upload a bird video and watch every model work simultaneously — vision models analyse 8 sampled frames while audio models process the extracted sound track. Results are fused into a single multimodal consensus.</p>
+      </div>
+      <div class="system-chip"><span class="pulse"></span><span>Inference device</span><strong>{{ device }}</strong></div>
+    </header>
+
+    {% if load_errors %}<div class="notice warning"><strong>Some models are unavailable.</strong><span>{{ load_errors|join(' | ') }}</span></div>{% endif %}
+    {% if not opencv_available or not moviepy_available %}
+    <div class="notice warning"><strong>Video processing dependencies missing.</strong><span>{% if not opencv_available %}opencv-python {% endif %}{% if not moviepy_available %}moviepy{% endif %} — run <code>pip install opencv-python moviepy</code> to enable video upload.</span></div>
+    {% endif %}
+
+    <nav class="tabs" aria-label="Analysis type">
+      <a class="tab tab-link" href="/">Audio analysis</a>
+      <a class="tab tab-link" href="/">Image analysis</a>
+      <span class="tab active">Video analysis</span>
+    </nav>
+
+    <section class="upload-panel">
+      <div class="upload-copy">
+        <span class="section-number">01</span>
+        <div>
+          <h2 id="uploadTitle">Upload a bird video</h2>
+          <p id="uploadHint">MP4, AVI, MOV, MKV, or WEBM. Eight evenly-spaced frames are sampled for the vision models; the full audio track is piped to the audio models.</p>
+        </div>
+      </div>
+      <div class="dropzone" id="dropzone">
+        <input id="fileInput" type="file" accept="video/mp4,video/avi,video/quicktime,video/x-matroska,video/webm">
+        <div class="drop-icon" id="dropIcon">▶</div>
+        <strong id="dropText">Drop a video here or browse</strong>
+        <span id="fileMeta">Maximum recommended size: 200 MB</span>
+      </div>
+      <div class="preview-row">
+        <video id="videoPreview" controls hidden playsinline></video>
+        <div class="frame-control">
+          <label for="nFrames" class="label">FRAMES TO SAMPLE</label>
+          <select id="nFrames">
+            <option value="4">4 frames</option>
+            <option value="8" selected>8 frames</option>
+            <option value="16">16 frames</option>
+            <option value="32">32 frames</option>
+          </select>
+        </div>
+        <button id="analyzeBtn" class="analyze" disabled>Analyze video <span>→</span></button>
+      </div>
+    </section>
+
+    <!-- Progress bar shown during inference -->
+    <div id="progressWrap" class="progress-wrap" hidden>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <p class="progress-label" id="progressLabel">Extracting frames and audio…</p>
+    </div>
+
+    <!-- Results -->
+    <section id="results" class="results" hidden>
+      <!-- Multimodal fusion banner -->
+      <div class="multimodal-banner" id="fusionBanner">
+        <div>
+          <p class="kicker">MULTIMODAL CONSENSUS</p>
+          <h2 id="fusionAgreement">Fusion result</h2>
+          <p id="fusionText"></p>
+        </div>
+        <div class="fusion-species" id="fusionSpecies">—</div>
+      </div>
+
+      <!-- Split results -->
+      <div class="results-split">
+        <!-- Audio results -->
+        <div class="results-column">
+          <div class="results-heading">
+            <div><span class="section-number">02</span><h2>Audio models</h2></div>
+            <span id="audioMeta"></span>
+          </div>
+          <div class="summary" id="audioSummary">
+            <div>
+              <p class="kicker">AUDIO CONSENSUS</p>
+              <h2 id="audioConsensusTitle">—</h2>
+              <p id="audioConsensusText"></p>
+            </div>
+            <div class="consensus-species" id="audioConsensusSpecies">—</div>
+          </div>
+          <div id="audioGrid" class="model-grid"></div>
+        </div>
+
+        <!-- Image results -->
+        <div class="results-column">
+          <div class="results-heading">
+            <div><span class="section-number">03</span><h2>Vision models <small id="frameBadge"></small></h2></div>
+            <span id="imageMeta"></span>
+          </div>
+          <div class="summary" id="imageSummary">
+            <div>
+              <p class="kicker">VISUAL CONSENSUS</p>
+              <h2 id="imageConsensusTitle">—</h2>
+              <p id="imageConsensusText"></p>
+            </div>
+            <div class="consensus-species" id="imageConsensusSpecies">—</div>
+          </div>
+          <div id="imageGrid" class="model-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <div id="status" class="status" role="status"></div>
+  </main>
+  <script src="{{ url_for('static', filename='js/video.js') }}"></script>
+</body>
+</html>

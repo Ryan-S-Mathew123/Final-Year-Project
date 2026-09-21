@@ -16,7 +16,7 @@
       <div class="system-chip"><span class="pulse"></span><span>Inference device</span><strong>{{ device }}</strong></div>
     </header>
     {% if load_errors %}<div class="notice warning"><strong>Some models are unavailable.</strong><span>{{ load_errors|join(' | ') }}</span></div>{% endif %}
-    <nav class="tabs" aria-label="Analysis type"><button class="tab active" data-tab="audio">Audio analysis</button><button class="tab" data-tab="image">Image analysis</button></nav>
+    <nav class="tabs" aria-label="Analysis type"><button class="tab active" data-tab="audio">Audio analysis</button><button class="tab" data-tab="image">Image analysis</button><a class="tab tab-link" href="/video">Video analysis</a></nav>
     <section class="upload-panel">
       <div class="upload-copy"><span class="section-number">01</span><div><h2 id="uploadTitle">Upload a bird recording</h2><p id="uploadHint">WAV, MP3, OGG, FLAC, or M4A. The four audio models use the same 40-feature MFCC representation.</p></div></div>
       <div class="dropzone" id="dropzone"><input id="fileInput" type="file" accept="audio/wav,audio/mpeg,audio/ogg,audio/flac,audio/mp4"><div class="drop-icon" id="dropIcon">↥</div><strong id="dropText">Drop a file here or browse</strong><span id="fileMeta">Maximum recommended size: 50 MB</span></div>

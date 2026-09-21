@@ -5,9 +5,11 @@ Run from the repository root with:
 """
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from tempfile import NamedTemporaryFile, mkdtemp
+import shutil
 
 import joblib
 import librosa
@@ -17,6 +19,22 @@ import torch.nn as nn
 from flask import Flask, jsonify, render_template, request
 from PIL import Image
 from torchvision import models, transforms
+
+# Optional video-processing imports — gracefully degraded if not installed
+try:
+    import cv2 as _cv2  # noqa: F401 — just checking availability
+    _OPENCV_AVAILABLE = True
+except ImportError:
+    _OPENCV_AVAILABLE = False
+
+try:
+    try:
+        from moviepy import VideoFileClip as _VideoFileClip  # moviepy >= 2.0
+    except ImportError:
+        from moviepy.editor import VideoFileClip as _VideoFileClip  # moviepy < 2.0
+    _MOVIEPY_AVAILABLE = True
+except ImportError:
+    _MOVIEPY_AVAILABLE = False
 
 
 FRONTEND_DIR = Path(__file__).resolve().parent
@@ -159,6 +177,126 @@ class ModelRegistry:
                 })
         return {"modality": "image", "device": str(DEVICE), "results": results, "consensus": self._consensus(results)}
 
+    def predict_image_from_pil(self, image: Image.Image) -> dict:
+        """Run all image models on an already-opened PIL image."""
+        tensor = IMAGE_TRANSFORM(image).unsqueeze(0).to(DEVICE)
+        results = []
+        with torch.inference_mode():
+            for name, (model, labels) in self.image_models.items():
+                started = time.perf_counter()
+                probabilities = torch.softmax(model(tensor), dim=1)[0].cpu().numpy()
+                elapsed = (time.perf_counter() - started) * 1000
+                results.append({"model": name, "labels": labels, "probs": probabilities, "latency_ms": elapsed})
+        return results
+
+    def predict_video(self, path: Path, n_frames: int = 8) -> dict:
+        """Extract audio + N frames from a video and run all models."""
+        if not _OPENCV_AVAILABLE:
+            raise RuntimeError("opencv-python is not installed. Run: pip install opencv-python")
+        if not _MOVIEPY_AVAILABLE:
+            raise RuntimeError("moviepy is not installed. Run: pip install moviepy")
+
+        import cv2
+        try:
+            from moviepy import VideoFileClip  # moviepy >= 2.0
+        except ImportError:
+            from moviepy.editor import VideoFileClip  # moviepy < 2.0
+
+        tmpdir = Path(mkdtemp())
+        try:
+            # ── video metadata ──────────────────────────────────────────────
+            cap = cv2.VideoCapture(str(path))
+            if not cap.isOpened():
+                raise ValueError("Could not open video file.")
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            fps = cap.get(cv2.CAP_PROP_FPS) or 30
+            duration_s = total_frames / fps
+
+            # ── frame extraction ────────────────────────────────────────────
+            indices = np.linspace(0, max(total_frames - 1, 0), n_frames, dtype=int)
+            per_model_probs: dict[str, list[np.ndarray]] = {}
+            per_model_labels: dict[str, list[str]] = {}
+            per_model_latencies: dict[str, list[float]] = {}
+            frames_processed = 0
+            for idx in indices:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, int(idx))
+                ret, frame = cap.read()
+                if not ret:
+                    continue
+                pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                frame_results = self.predict_image_from_pil(pil_image)
+                for res in frame_results:
+                    m = res["model"]
+                    per_model_probs.setdefault(m, []).append(res["probs"])
+                    per_model_labels[m] = res["labels"]
+                    per_model_latencies.setdefault(m, []).append(res["latency_ms"])
+                frames_processed += 1
+            cap.release()
+
+            # Average probabilities across frames
+            image_results = []
+            for name in per_model_probs:
+                avg_probs = np.mean(per_model_probs[name], axis=0)
+                labels = per_model_labels[name]
+                best = int(np.argmax(avg_probs))
+                image_results.append({
+                    "model": name,
+                    "species": str(labels[best]),
+                    "confidence": round(float(avg_probs[best]) * 100, 2),
+                    "latency_ms": round(float(np.mean(per_model_latencies[name])), 2),
+                    "top_three": self._top_three(avg_probs, labels),
+                })
+            image_payload = {
+                "modality": "image",
+                "device": str(DEVICE),
+                "results": image_results,
+                "consensus": self._consensus(image_results),
+            }
+
+            # ── audio extraction ────────────────────────────────────────────
+            audio_payload = None
+            audio_path = tmpdir / "extracted_audio.wav"
+            try:
+                clip = VideoFileClip(str(path))
+                if clip.audio is not None:
+                    clip.audio.write_audiofile(str(audio_path), logger=None)
+                    clip.close()
+                    audio_payload = self.predict_audio(audio_path)
+                else:
+                    clip.close()
+                    audio_payload = {"modality": "audio", "error": "No audio track found in video."}
+            except Exception as audio_exc:
+                audio_payload = {"modality": "audio", "error": str(audio_exc)}
+
+            # ── multimodal fusion (majority vote) ───────────────────────────
+            candidates = []
+            if image_payload["consensus"]["species"] not in ("Unavailable",):
+                candidates.append(image_payload["consensus"]["species"])
+            if audio_payload and "consensus" in audio_payload and audio_payload["consensus"]["species"] not in ("Unavailable",):
+                candidates.append(audio_payload["consensus"]["species"])
+            fusion_votes: dict[str, int] = {}
+            for s in candidates:
+                fusion_votes[s] = fusion_votes.get(s, 0) + 1
+            if fusion_votes:
+                fusion_species = max(fusion_votes, key=lambda k: fusion_votes[k])
+            else:
+                fusion_species = "Unavailable"
+
+            return {
+                "audio": audio_payload,
+                "image": image_payload,
+                "multimodal": {
+                    "species": fusion_species,
+                    "votes": fusion_votes,
+                    "agreement": "Both modalities agree" if len(set(candidates)) == 1 else "Modalities disagree — showing majority",
+                },
+                "frame_count": frames_processed,
+                "duration_s": round(duration_s, 2),
+                "fps": round(fps, 2),
+            }
+        finally:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
 
 registry = ModelRegistry()
 
@@ -185,9 +323,28 @@ def _predict(modality: str):
             temporary.unlink(missing_ok=True)
 
 
+@app.errorhandler(Exception)
+def handle_any_exception(exc):
+    """Always return JSON instead of Flask's default HTML error pages."""
+    import traceback
+    print("[/predict/video] Unhandled exception:", traceback.format_exc())
+    return jsonify({"error": str(exc)}), 500
+
+
 @app.get("/")
 def index():
     return render_template("index.html", device=str(DEVICE), load_errors=registry.load_errors)
+
+
+@app.get("/video")
+def video_page():
+    return render_template(
+        "video.html",
+        device=str(DEVICE),
+        load_errors=registry.load_errors,
+        opencv_available=_OPENCV_AVAILABLE,
+        moviepy_available=_MOVIEPY_AVAILABLE,
+    )
 
 
 @app.post("/predict/audio")
@@ -200,6 +357,37 @@ def predict_image():
     return _predict("image")
 
 
+@app.post("/predict/video")
+def predict_video():
+    if not _OPENCV_AVAILABLE or not _MOVIEPY_AVAILABLE:
+        missing = []
+        if not _OPENCV_AVAILABLE:
+            missing.append("opencv-python")
+        if not _MOVIEPY_AVAILABLE:
+            missing.append("moviepy")
+        return jsonify({"error": f"Missing dependencies: {', '.join(missing)}. Run: pip install {' '.join(missing)}"}), 500
+    upload = request.files.get("file")
+    if upload is None or not upload.filename:
+        return jsonify({"error": "Attach a video file using the 'file' field."}), 400
+    suffix = Path(upload.filename).suffix.lower()
+    allowed = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
+    if suffix not in allowed:
+        return jsonify({"error": f"Unsupported video format: {suffix or 'missing extension'}"}), 400
+    n_frames = min(int(request.form.get("n_frames", 8)), 32)
+    temporary = None
+    try:
+        with NamedTemporaryFile(suffix=suffix, delete=False) as handle:
+            upload.save(handle)
+            temporary = Path(handle.name)
+        result = registry.predict_video(temporary, n_frames=n_frames)
+        return jsonify(result)
+    except Exception as exc:
+        return jsonify({"error": f"Video inference failed: {exc}"}), 500
+    finally:
+        if temporary:
+            temporary.unlink(missing_ok=True)
+
+
 @app.get("/health")
 def health():
     return jsonify({
@@ -208,6 +396,10 @@ def health():
         "image_models_loaded": list(registry.image_models),
         "load_errors": registry.load_errors,
         "device": str(DEVICE),
+        "video_support": {
+            "opencv": _OPENCV_AVAILABLE,
+            "moviepy": _MOVIEPY_AVAILABLE,
+        },
     })
 
 
