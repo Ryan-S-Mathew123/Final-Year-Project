@@ -2,7 +2,7 @@
 
 This module implements the image-based bird species classification component of the Final Year Project.
 
-The objective is to classify bird images into 12 different bird species using deep learning and compare multiple pretrained CNN architectures.
+The objective is to classify bird images into 12 different bird species. The CNN checkpoints remain available as image feature extractors and standalone baselines. The cross-modality dashboard compares the same Random Forest, SVM, K-Nearest Neighbors, and Gradient Boosting classifiers for image and audio inputs.
 
 The following four pretrained ImageNet models were fine-tuned and evaluated:
 
@@ -409,6 +409,16 @@ Final Bird Prediction
 ```
 
 The image model can subsequently be exposed through the project server and integrated with the audio-based bird localization pipeline.
+
+## Shared classifier comparison
+
+The dashboard encodes images with the existing `convnext_best.pth` checkpoint, then fits each of the four shared classifier families on the embeddings. Run the following from the repository root after training the ConvNeXt checkpoint:
+
+```powershell
+python models/image_model/train_classifiers.py
+```
+
+Training embeddings come from `dataset/train/`; validation and test embeddings come from their existing, separate splits. Results, including training accuracy (for overfitting checks), validation accuracy, held-out test accuracy, and test macro F1, are written to `results/classifier_comparison.json`. The classifier artifacts are written to `comparison_models/`. Test results are not used for fitting.
 
 ---
 

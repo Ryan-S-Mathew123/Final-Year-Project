@@ -12,7 +12,7 @@ function configureTab(tab){
   document.querySelectorAll('.tab').forEach(button=>button.classList.toggle('active',button.dataset.tab===tab));
   const audio=tab==='audio';
   $('#uploadTitle').textContent=audio?'Upload a bird recording':'Upload a bird image';
-  $('#uploadHint').textContent=audio?'WAV, MP3, OGG, FLAC, or M4A. The four audio models use the same 40-feature MFCC representation.':'JPG, PNG, or WEBP. Every vision model receives a normalized 224 × 224 crop.';
+  $('#uploadHint').textContent=audio?'WAV, MP3, OGG, FLAC, or M4A. The four shared classifier families use 40 MFCC features.':'JPG, PNG, or WEBP. The four shared classifier families use ConvNeXt image embeddings.';
   fileInput.accept=audio?'audio/wav,audio/mpeg,audio/ogg,audio/flac,audio/mp4':'image/jpeg,image/png,image/webp';
   $('#dropIcon').textContent=audio?'↥':'◈';
   clearFile();
@@ -32,7 +32,8 @@ function renderResults(data){
   $('#summaryText').textContent=`The ensemble decision is based on ${data.results.length} independently evaluated models.`;
   $('#consensusSpecies').textContent=consensus.species;
   $('#resultMeta').textContent=data.modality==='image'?`Device: ${data.device}`:`Sample rate: ${data.sample_rate} Hz`;
-  $('#modelGrid').innerHTML=data.results.map(result=>`<article class="model-card"><h3>${result.model}</h3><span class="label">PREDICTED SPECIES</span><div class="species">${result.species}</div><div class="confidence-row"><span>Confidence</span><strong>${result.confidence.toFixed(2)}%</strong></div><div class="gauge"><i style="width:${Math.min(100,result.confidence)}%"></i></div><div class="label top-title">TOP 3 PREDICTIONS</div>${result.top_three.map(item=>`<div class="top-row"><span>${item.species}</span><span>${item.probability.toFixed(2)}%</span></div>`).join('')}<div class="latency"><span>Inference latency</span><strong>${result.latency_ms.toFixed(2)} ms</strong></div></article>`).join('');
+  $('#modelGrid').innerHTML=data.results.map(result=>`<article class="model-card"><h3>${result.model}</h3><span class="label">PREDICTED SPECIES</span><div class="species">${result.species}</div><div class="confidence-row"><span>Confidence</span><strong>${result.confidence.toFixed(2)}%</strong></div><div class="gauge"><i style="width:${Math.min(100,result.confidence)}%"></i></div><div class="label top-title">TOP 3 PREDICTIONS</div>${result.top_three.map(item=>`<div class="top-row"><span>${item.species}</span><span>${item.probability.toFixed(2)}%</span></div>`).join('')}<div class="latency"><span>Inference latency</span><strong>${result.latency_ms.toFixed(2)} ms</strong></div>${result.train_accuracy===null||result.train_accuracy===undefined?'':`<div class="latency"><span>Train / validation accuracy</span><strong>${(result.train_accuracy*100).toFixed(2)}% / ${(result.validation_accuracy*100).toFixed(2)}%</strong></div>`}${result.test_accuracy===null||result.test_accuracy===undefined?'':`<div class="latency"><span>Held-out test accuracy</span><strong>${(result.test_accuracy*100).toFixed(2)}%</strong></div><div class="latency"><span>Held-out macro F1</span><strong>${(result.test_macro_f1*100).toFixed(2)}%</strong></div>`}</article>`).join('');
+  if(data.modality==='image'&&data.feature_extraction_ms!==undefined){$('#resultMeta').textContent+=` · Feature extraction: ${data.feature_extraction_ms.toFixed(2)} ms`}
   $('#results').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function analyze(){

@@ -2,7 +2,7 @@
 
 This project identifies bird species from uploaded or recorded audio. It contains two recognition workflows:
 
-- A browser application using MFCC features and a Random Forest classifier.
+- A comparison workflow using MFCC features and four shared, regularized scikit-learn classifier families.
 - A CLAP audio-embedding workflow for command-line prediction and prototype-based search.
 
 The project currently contains 12 species: Spotted Dove, Rose-ringed Parakeet, Asian Koel, Common Cuckoo, White-naped Woodpecker, Spotted Owlet, Rock Eagle-Owl, Rock Pigeon, Indian Peafowl, Indian Grey Hornbill, Grey Junglefowl, and Peregrine Falcon.
@@ -33,18 +33,25 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 The repository already includes `venv` on some machines, but creating a fresh environment avoids dependency mismatches.
 
-## Browser application
+## Shared classifier comparison
 
-The web app loads `model.pkl` and `label_encoder.pkl` from the project root. Start it with:
+Train the comparison classifiers from the repository root:
 
 ```powershell
-python train.py
-python -m uvicorn app:app --reload
+python models/audio_model/train.py
 ```
 
-Open `http://127.0.0.1:8000` in a browser and upload an audio file. Supported formats include WAV, MP3, OGG, FLAC, and M4A.
+The script extracts the same 40 averaged MFCC features for every clip, makes a deterministic stratified 70/15/15 train/validation/test split, and trains Random Forest, SVM, K-Nearest Neighbors, and Gradient Boosting. Training accuracy is retained as an overfitting check; model comparisons use validation and held-out test accuracy and macro F1. The dashboard reads the resulting artifacts and test metrics.
 
-Run `python train.py` again whenever the folders in `dataset/` change. The training script searches `dataset/` first and writes the updated model files to the project root.
+Start the Flask comparison dashboard from the repository root:
+
+```powershell
+python models/flask_frontend/app.py
+```
+
+Open `http://127.0.0.1:5000` in a browser and upload an audio file. Supported formats include WAV, MP3, OGG, FLAC, and M4A.
+
+For image and video comparisons, also run `python models/image_model/train_classifiers.py`; it requires the ConvNeXt checkpoint and image train/validation/test folders. The separate audio embedding FastAPI application (`models/audio_model/app.py`) remains available for the CLAP/prototype workflow described below.
 
 ## Embedding workflow
 
@@ -109,12 +116,12 @@ python -m pytest
 
 | Path | Purpose |
 | --- | --- |
-| `app.py` | FastAPI web application |
-| `train.py` | MFCC and Random Forest training |
+| `app.py` | Audio embedding FastAPI application |
+| `train.py` | MFCC feature extraction and shared classifier training |
 | `dataset/` | Input audio for the browser model |
 | `datasets/audio/` | Input audio for the embedding workflow |
 | `scripts/` | Dataset, embedding, and prediction commands |
 | `src/` | Embedding workflow implementation |
 | `templates/` | Web interface |
-| `model.pkl` | Trained Random Forest model |
-| `label_encoder.pkl` | Saved species label encoder |
+| `comparison_models/` | Trained shared-family model artifacts |
+| `results/classifier_comparison.json` | Train/validation/test model metrics |

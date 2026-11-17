@@ -53,6 +53,8 @@ function buildModelCard(result) {
     <div class="label top-title">TOP 3 PREDICTIONS</div>
     ${result.top_three.map(item => `<div class="top-row"><span>${item.species}</span><span>${item.probability.toFixed(2)}%</span></div>`).join('')}
     <div class="latency"><span>Avg inference latency</span><strong>${result.latency_ms.toFixed(2)} ms</strong></div>
+    ${result.train_accuracy === null || result.train_accuracy === undefined ? '' : `<div class="latency"><span>Train / validation accuracy</span><strong>${(result.train_accuracy * 100).toFixed(2)}% / ${(result.validation_accuracy * 100).toFixed(2)}%</strong></div>`}
+    ${result.test_accuracy === null || result.test_accuracy === undefined ? '' : `<div class="latency"><span>Held-out test accuracy</span><strong>${(result.test_accuracy * 100).toFixed(2)}%</strong></div><div class="latency"><span>Held-out macro F1</span><strong>${(result.test_macro_f1 * 100).toFixed(2)}%</strong></div>`}
   </article>`;
 }
 
@@ -84,7 +86,7 @@ function renderResults(data) {
   const image = data.image;
   if (image && image.results && image.results.length) {
     const ic = image.consensus;
-    $('#imageMeta').textContent          = `Device: ${image.device}`;
+    $('#imageMeta').textContent          = `Device: ${image.device} · Features: ${image.feature_extraction_ms.toFixed(2)} ms`;
     $('#imageConsensusTitle').textContent = ic.agreement;
     $('#imageConsensusText').textContent  = `${image.results.length} vision models evaluated across ${data.frame_count} frame${data.frame_count !== 1 ? 's' : ''}.`;
     $('#imageConsensusSpecies').textContent = ic.species;
@@ -105,8 +107,8 @@ const steps = [
   'Uploading video…',
   'Extracting audio track…',
   'Sampling frames…',
-  'Running audio models…',
-  'Running vision models…',
+  'Running shared audio classifiers…',
+  'Running shared image classifiers…',
   'Fusing multimodal results…',
 ];
 

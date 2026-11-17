@@ -1,0 +1,47 @@
+{
+  "modality": "audio",
+  "classes": [
+    "Asian Koel",
+    "Common Cuckoo",
+    "Grey Indian HornBill",
+    "Grey Junglefowl Clips",
+    "Indian Peafoul",
+    "Indian Robin",
+    "Peregrine Falcon  Clips",
+    "Rock Eagle",
+    "Rose-ringed Parakeet",
+    "Spotted Dove_",
+    "Spotted Owlet",
+    "White-naped Woodpecker"
+  ],
+  "models": {
+    "Random Forest": {
+      "train_accuracy": 0.996031746031746,
+      "validation_accuracy": 0.9166666666666666,
+      "validation_macro_f1": 0.915308594197913,
+      "test_accuracy": 0.8981481481481481,
+      "test_macro_f1": 0.897102232705948
+    },
+    "SVM": {
+      "train_accuracy": 0.9781746031746031,
+      "validation_accuracy": 0.9074074074074074,
+      "validation_macro_f1": 0.9068610046357725,
+      "test_accuracy": 0.9166666666666666,
+      "test_macro_f1": 0.9132189132963128
+    },
+    "K-Nearest Neighbors": {
+      "train_accuracy": 0.876984126984127,
+      "validation_accuracy": 0.8518518518518519,
+      "validation_macro_f1": 0.852575990986275,
+      "test_accuracy": 0.8148148148148148,
+      "test_macro_f1": 0.8180666283607461
+    },
+    "Gradient Boosting": {
+      "train_accuracy": 0.8809523809523809,
+      "validation_accuracy": 0.8240740740740741,
+      "validation_macro_f1": 0.8211615640408209,
+      "test_accuracy": 0.7777777777777778,
+      "test_macro_f1": 0.7730222205841399
+    }
+  }
+}

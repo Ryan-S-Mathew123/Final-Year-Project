@@ -1,107 +1,112 @@
-import os
+"""Train all shared classifier families for the audio modality."""
+from __future__ import annotations
+
 import argparse
+import sys
+from pathlib import Path
+
 import librosa
 import numpy as np
-import joblib
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 
-def get_dataset_path():
-    if os.path.exists("dataset"):
-        return "dataset"
-    if os.path.exists("../../dataset"):
-        return "../../dataset"
-    if os.path.exists("datasets/audio"):
-        return "datasets/audio"
-    if os.path.exists("datasets"):
-        return "datasets"
-    return "dataset"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-DATASET_PATH = get_dataset_path()
-LABEL_ENCODER_PATH = "label_encoder.pkl"
+from models.model_families import train_comparison_models
 
-def extract_features(file_path):
+
+BASE_DIR = Path(__file__).resolve().parent
+DATASET_PATH = BASE_DIR / "dataset"
+SEED = 42
+MODEL_CHOICES = {
+    "random_forest": "Random Forest",
+    "svm": "SVM",
+    "knn": "K-Nearest Neighbors",
+    "gradient_boosting": "Gradient Boosting",
+}
+
+
+def extract_features(file_path: Path) -> np.ndarray | None:
     try:
-        audio, sample_rate = librosa.load(file_path)
+        audio, sample_rate = librosa.load(file_path, mono=True)
         mfccs = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40)
-        mfccs_processed = np.mean(mfccs.T, axis=0)
-        return mfccs_processed
-    except Exception as e:
-        print(f"Error encountered while parsing file: {file_path}. Details: {e}")
+        return np.mean(mfccs.T, axis=0)
+    except Exception as exc:
+        print(f"Error parsing {file_path}: {exc}")
         return None
 
-def process_directory(dir_path):
+
+def process_directory(dir_path: Path) -> tuple[list[np.ndarray], list[str]]:
     features = []
     labels = []
-    for class_name in os.listdir(dir_path):
-        class_dir = os.path.join(dir_path, class_name)
-        if not os.path.isdir(class_dir):
+    for class_dir in sorted(dir_path.iterdir()):
+        if not class_dir.is_dir():
             continue
-        
-        for file_name in os.listdir(class_dir):
-            if file_name.endswith(('.mp3', '.wav', '.ogg', '.flac', '.m4a')):
-                file_path = os.path.join(class_dir, file_name)
-                data = extract_features(file_path)
-                if data is not None:
-                    features.append(data)
-                    labels.append(class_name)
+        for file_path in sorted(class_dir.iterdir()):
+            if file_path.suffix.lower() not in {".mp3", ".wav", ".ogg", ".flac", ".m4a"}:
+                continue
+            data = extract_features(file_path)
+            if data is not None:
+                features.append(data)
+                labels.append(class_dir.name)
     return features, labels
 
-def main():
-    parser = argparse.ArgumentParser(description="Train audio classification model.")
-    parser.add_argument("--model", type=str, default="random_forest", choices=["random_forest", "svm", "gradient_boosting", "knn"], help="Model to train")
+
+def split_dataset(features: np.ndarray, labels: np.ndarray) -> tuple[np.ndarray, ...]:
+    """Make deterministic, stratified 70/15/15 train/validation/test splits."""
+    X_train_validation, X_test, y_train_validation, y_test = train_test_split(
+        features,
+        labels,
+        test_size=0.15,
+        random_state=SEED,
+        stratify=labels,
+    )
+    validation_fraction = 0.15 / 0.85
+    X_train, X_validation, y_train, y_validation = train_test_split(
+        X_train_validation,
+        y_train_validation,
+        test_size=validation_fraction,
+        random_state=SEED,
+        stratify=y_train_validation,
+    )
+    return X_train, y_train, X_validation, y_validation, X_test, y_test
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Train comparable audio classifiers.")
+    parser.add_argument(
+        "--model",
+        default="all",
+        choices=["all", *MODEL_CHOICES],
+        help="Train every shared family, or just one family.",
+    )
     args = parser.parse_args()
-    model_name = args.model
 
-    print(f"Extracting features from dataset directory '{DATASET_PATH}'...")
+    if not DATASET_PATH.is_dir():
+        raise FileNotFoundError(f"Audio dataset directory not found: {DATASET_PATH}")
     features, labels = process_directory(DATASET_PATH)
-
     if not features:
-        print("No audio files processed. Please check your dataset directory.")
-        return
+        raise ValueError(f"No supported audio files found under {DATASET_PATH}")
 
-    # Convert to numpy arrays
-    X = np.array(features)
-    y = np.array(labels)
+    X = np.asarray(features, dtype=np.float32)
+    y = np.asarray(labels)
+    model_names = None
+    if args.model != "all":
+        model_names = [MODEL_CHOICES[args.model]]
 
-    # Encode labels
-    le = LabelEncoder()
-    y_encoded = le.fit_transform(y)
+    splits = split_dataset(X, y)
+    print(f"Training on {len(splits[0])} audio clips across {len(np.unique(y))} classes.")
+    train_comparison_models(
+        *splits,
+        sorted(np.unique(y).tolist()),
+        BASE_DIR / "comparison_models",
+        "audio",
+        model_names,
+    )
+    print(f"Saved audio classifier artifacts under {BASE_DIR / 'comparison_models'}.")
+    print(f"Holdout comparison saved to {BASE_DIR / 'results' / 'classifier_comparison.json'}.")
 
-    print(f"Training on {len(X)} samples across {len(le.classes_)} classes.")
-    
-    # Train test split
-    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
-
-    # Train model
-    print(f"Training {model_name} model...")
-    if model_name == "random_forest":
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
-    elif model_name == "svm":
-        model = SVC(probability=True, random_state=42)
-    elif model_name == "gradient_boosting":
-        model = GradientBoostingClassifier(n_estimators=100, random_state=42)
-    elif model_name == "knn":
-        model = KNeighborsClassifier(n_neighbors=5)
-        
-    model.fit(X_train, y_train)
-
-    accuracy = model.score(X_test, y_test)
-    print(f"Validation Accuracy: {accuracy * 100:.2f}%")
-
-    # Save model and label encoder
-    MODEL_PATH = f"model_{model_name}.pkl"
-    joblib.dump(model, MODEL_PATH)
-    joblib.dump(le, LABEL_ENCODER_PATH)
-    print(f"Model saved to {MODEL_PATH}")
-    print(f"Label encoder saved to {LABEL_ENCODER_PATH}")
 
 if __name__ == "__main__":
-    if not os.path.exists(DATASET_PATH):
-        os.makedirs(DATASET_PATH)
-        print(f"Created {DATASET_PATH} directory. Please add your audio files in class subfolders.")
-    else:
-        main()
+    main()

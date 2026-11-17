@@ -5,7 +5,8 @@ Run from the repository root with:
 """
 from __future__ import annotations
 
-import os
+import json
+import sys
 import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile, mkdtemp
@@ -15,10 +16,8 @@ import joblib
 import librosa
 import numpy as np
 import torch
-import torch.nn as nn
 from flask import Flask, jsonify, render_template, request
 from PIL import Image
-from torchvision import models, transforms
 
 # Optional video-processing imports — gracefully degraded if not installed
 try:
@@ -39,82 +38,79 @@ except ImportError:
 
 FRONTEND_DIR = Path(__file__).resolve().parent
 REPO_ROOT = FRONTEND_DIR.parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from models.image_model.feature_extractor import IMAGE_TRANSFORM, load_image_encoder
+from models.model_families import MODEL_ARTIFACTS
+
+
 AUDIO_DIR = REPO_ROOT / "models" / "audio_model"
 IMAGE_DIR = REPO_ROOT / "models" / "image_model"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 app = Flask(__name__, template_folder=str(FRONTEND_DIR / "templates"), static_folder=str(FRONTEND_DIR / "static"))
 
-AUDIO_MODELS = {
-    "Random Forest": AUDIO_DIR / "model.pkl",
-    "Gradient Boosting": AUDIO_DIR / "model_gradient_boosting.pkl",
-    "SVM": AUDIO_DIR / "model_svm.pkl",
-    "K-Nearest Neighbors": AUDIO_DIR / "model_knn.pkl",
-}
-IMAGE_CHECKPOINTS = {
-    "ResNet50": IMAGE_DIR / "checkpoints" / "resnet50_best.pth",
-    "EfficientNet-B0": IMAGE_DIR / "checkpoints" / "efficientnet_best.pth",
-    "MobileNetV3-Large": IMAGE_DIR / "checkpoints" / "mobilenet_best.pth",
-    "ConvNeXt-Tiny": IMAGE_DIR / "checkpoints" / "convnext_best.pth",
-}
-IMAGE_TRANSFORM = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-])
-
-
 class ModelRegistry:
-    """Loads every available trained artifact once and reuses it for requests."""
+    """Loads the same classifier families for both modalities."""
 
     def __init__(self) -> None:
-        self.audio_models: dict[str, object] = {}
-        self.audio_labels = None
-        self.image_models: dict[str, tuple[torch.nn.Module, list[str]]] = {}
+        self.audio_models: dict[str, tuple[object, list[str]]] = {}
+        self.image_models: dict[str, tuple[object, list[str]]] = {}
+        self.image_encoder: torch.nn.Module | None = None
+        self.audio_metrics: dict = {}
+        self.image_metrics: dict = {}
         self.load_errors: list[str] = []
         self._load_audio_models()
         self._load_image_models()
 
-    def _load_audio_models(self) -> None:
-        encoder_path = AUDIO_DIR / "label_encoder.pkl"
+    def _load_metrics(self, directory: Path, modality: str) -> dict:
+        metrics_path = directory / "results" / "classifier_comparison.json"
         try:
-            self.audio_labels = joblib.load(encoder_path)
-        except Exception as exc:
-            self.load_errors.append(f"Audio label encoder: {exc}")
-            return
-        for name, path in AUDIO_MODELS.items():
+            with metrics_path.open(encoding="utf-8") as file:
+                report = json.load(file)
+            if not isinstance(report, dict) or report.get("modality") != modality:
+                raise ValueError(f"Expected {modality} metrics in {metrics_path}")
+            return report
+        except FileNotFoundError:
+            return {}
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            self.load_errors.append(f"{modality.title()} evaluation metrics: {exc}")
+            return {}
+
+    def _load_audio_models(self) -> None:
+        self.audio_metrics = self._load_metrics(AUDIO_DIR, "audio")
+        for name, filename in MODEL_ARTIFACTS.items():
+            path = AUDIO_DIR / "comparison_models" / filename
             try:
-                self.audio_models[name] = joblib.load(path)
+                artifact = joblib.load(path)
+                model = artifact["model"]
+                labels = [str(label) for label in artifact["classes"]]
+                if not hasattr(model, "predict_proba"):
+                    raise TypeError("Classifier does not implement predict_proba")
+                self.audio_models[name] = (model, labels)
             except Exception as exc:
                 self.load_errors.append(f"{name}: {exc}")
 
-    @staticmethod
-    def _create_image_model(name: str, class_count: int) -> torch.nn.Module:
-        if name == "ResNet50":
-            model = models.resnet50(weights=None)
-            model.fc = nn.Linear(model.fc.in_features, class_count)
-        elif name == "EfficientNet-B0":
-            model = models.efficientnet_b0(weights=None)
-            model.classifier[1] = nn.Linear(model.classifier[1].in_features, class_count)
-        elif name == "MobileNetV3-Large":
-            model = models.mobilenet_v3_large(weights=None)
-            model.classifier[3] = nn.Linear(model.classifier[3].in_features, class_count)
-        elif name == "ConvNeXt-Tiny":
-            model = models.convnext_tiny(weights=None)
-            model.classifier[2] = nn.Linear(model.classifier[2].in_features, class_count)
-        else:
-            raise ValueError(f"Unsupported image model: {name}")
-        return model
-
     def _load_image_models(self) -> None:
-        for name, path in IMAGE_CHECKPOINTS.items():
+        self.image_metrics = self._load_metrics(IMAGE_DIR, "image")
+        encoder_path = IMAGE_DIR / "checkpoints" / "convnext_best.pth"
+        try:
+            self.image_encoder, image_classes = load_image_encoder(encoder_path, DEVICE)
+        except Exception as exc:
+            self.load_errors.append(f"ConvNeXt image feature extractor: {exc}")
+            image_classes = []
+
+        for name, filename in MODEL_ARTIFACTS.items():
+            path = IMAGE_DIR / "comparison_models" / filename
             try:
-                checkpoint = torch.load(path, map_location=DEVICE)
-                classes = list(checkpoint["classes"])
-                model = self._create_image_model(name, len(classes))
-                model.load_state_dict(checkpoint["model_state_dict"])
-                model.to(DEVICE).eval()
+                artifact = joblib.load(path)
+                model = artifact["model"]
+                classes = [str(label) for label in artifact["classes"]]
+                if not hasattr(model, "predict_proba"):
+                    raise TypeError("Classifier does not implement predict_proba")
+                if image_classes and classes != image_classes:
+                    raise ValueError("Classifier labels do not match the ConvNeXt checkpoint.")
                 self.image_models[name] = (model, classes)
             except Exception as exc:
                 self.load_errors.append(f"{name}: {exc}")
@@ -139,55 +135,82 @@ class ModelRegistry:
         }
 
     def predict_audio(self, path: Path) -> dict:
+        if not self.audio_models:
+            raise RuntimeError("No audio classifiers are available. Train them with models/audio_model/train.py.")
         audio, sample_rate = librosa.load(path, mono=True)
         mfcc = librosa.feature.mfcc(y=audio, sr=sample_rate, n_mfcc=40)
         features = np.mean(mfcc.T, axis=0).reshape(1, -1)
         results = []
-        labels = list(self.audio_labels.classes_)
-        for name, model in self.audio_models.items():
+        for name, (model, labels) in self.audio_models.items():
             started = time.perf_counter()
             probabilities = np.asarray(model.predict_proba(features)[0], dtype=float)
             elapsed = (time.perf_counter() - started) * 1000
             best = int(np.argmax(probabilities))
+            metrics = self.audio_metrics.get("models", {}).get(name, {})
             results.append({
                 "model": name,
                 "species": str(labels[best]),
                 "confidence": round(float(probabilities[best]) * 100, 2),
                 "latency_ms": round(elapsed, 2),
                 "top_three": self._top_three(probabilities, labels),
+                "train_accuracy": metrics.get("train_accuracy"),
+                "validation_accuracy": metrics.get("validation_accuracy"),
+                "test_accuracy": metrics.get("test_accuracy"),
+                "test_macro_f1": metrics.get("test_macro_f1"),
             })
         return {"modality": "audio", "sample_rate": sample_rate, "results": results, "consensus": self._consensus(results)}
 
     def predict_image(self, path: Path) -> dict:
         image = Image.open(path).convert("RGB")
         tensor = IMAGE_TRANSFORM(image).unsqueeze(0).to(DEVICE)
-        results = []
-        with torch.inference_mode():
-            for name, (model, labels) in self.image_models.items():
-                started = time.perf_counter()
-                probabilities = torch.softmax(model(tensor), dim=1)[0].cpu().numpy()
-                elapsed = (time.perf_counter() - started) * 1000
-                best = int(np.argmax(probabilities))
-                results.append({
-                    "model": name,
-                    "species": str(labels[best]),
-                    "confidence": round(float(probabilities[best]) * 100, 2),
-                    "latency_ms": round(elapsed, 2),
-                    "top_three": self._top_three(probabilities, labels),
-                })
-        return {"modality": "image", "device": str(DEVICE), "results": results, "consensus": self._consensus(results)}
+        results, feature_extraction_ms = self._predict_image_tensor(tensor)
+        return {
+            "modality": "image",
+            "device": str(DEVICE),
+            "feature_extraction_ms": round(feature_extraction_ms, 2),
+            "results": results,
+            "consensus": self._consensus(results),
+        }
 
-    def predict_image_from_pil(self, image: Image.Image) -> dict:
-        """Run all image models on an already-opened PIL image."""
-        tensor = IMAGE_TRANSFORM(image).unsqueeze(0).to(DEVICE)
-        results = []
+    def _predict_image_tensor(
+        self,
+        tensor: torch.Tensor,
+        include_probabilities: bool = False,
+    ) -> tuple[list[dict], float]:
+        if self.image_encoder is None or not self.image_models:
+            raise RuntimeError("No image classifiers are available. Run models/image_model/train_classifiers.py.")
+        started = time.perf_counter()
         with torch.inference_mode():
-            for name, (model, labels) in self.image_models.items():
-                started = time.perf_counter()
-                probabilities = torch.softmax(model(tensor), dim=1)[0].cpu().numpy()
-                elapsed = (time.perf_counter() - started) * 1000
-                results.append({"model": name, "labels": labels, "probs": probabilities, "latency_ms": elapsed})
-        return results
+            features = self.image_encoder(tensor).cpu().numpy()
+        feature_extraction_ms = (time.perf_counter() - started) * 1000
+        results = []
+        for name, (model, labels) in self.image_models.items():
+            started = time.perf_counter()
+            probabilities = np.asarray(model.predict_proba(features)[0], dtype=float)
+            elapsed = (time.perf_counter() - started) * 1000
+            best = int(np.argmax(probabilities))
+            metrics = self.image_metrics.get("models", {}).get(name, {})
+            result = {
+                "model": name,
+                "species": str(labels[best]),
+                "confidence": round(float(probabilities[best]) * 100, 2),
+                "latency_ms": round(elapsed, 2),
+                "top_three": self._top_three(probabilities, labels),
+                "train_accuracy": metrics.get("train_accuracy"),
+                "validation_accuracy": metrics.get("validation_accuracy"),
+                "test_accuracy": metrics.get("test_accuracy"),
+                "test_macro_f1": metrics.get("test_macro_f1"),
+            }
+            if include_probabilities:
+                result["probs"] = probabilities
+                result["labels"] = labels
+            results.append(result)
+        return results, feature_extraction_ms
+
+    def predict_image_from_pil(self, image: Image.Image) -> tuple[list[dict], float]:
+        """Run all image classifiers on an already-opened PIL image."""
+        tensor = IMAGE_TRANSFORM(image).unsqueeze(0).to(DEVICE)
+        return self._predict_image_tensor(tensor, include_probabilities=True)
 
     def predict_video(self, path: Path, n_frames: int = 8) -> dict:
         """Extract audio + N frames from a video and run all models."""
@@ -217,6 +240,8 @@ class ModelRegistry:
             per_model_probs: dict[str, list[np.ndarray]] = {}
             per_model_labels: dict[str, list[str]] = {}
             per_model_latencies: dict[str, list[float]] = {}
+            per_model_metrics: dict[str, dict] = {}
+            feature_extraction_times: list[float] = []
             frames_processed = 0
             for idx in indices:
                 cap.set(cv2.CAP_PROP_POS_FRAMES, int(idx))
@@ -224,12 +249,19 @@ class ModelRegistry:
                 if not ret:
                     continue
                 pil_image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-                frame_results = self.predict_image_from_pil(pil_image)
+                frame_results, feature_extraction_ms = self.predict_image_from_pil(pil_image)
+                feature_extraction_times.append(feature_extraction_ms)
                 for res in frame_results:
                     m = res["model"]
                     per_model_probs.setdefault(m, []).append(res["probs"])
                     per_model_labels[m] = res["labels"]
                     per_model_latencies.setdefault(m, []).append(res["latency_ms"])
+                    per_model_metrics[m] = {
+                        "train_accuracy": res["train_accuracy"],
+                        "validation_accuracy": res["validation_accuracy"],
+                        "test_accuracy": res["test_accuracy"],
+                        "test_macro_f1": res["test_macro_f1"],
+                    }
                 frames_processed += 1
             cap.release()
 
@@ -245,10 +277,12 @@ class ModelRegistry:
                     "confidence": round(float(avg_probs[best]) * 100, 2),
                     "latency_ms": round(float(np.mean(per_model_latencies[name])), 2),
                     "top_three": self._top_three(avg_probs, labels),
+                    **per_model_metrics[name],
                 })
             image_payload = {
                 "modality": "image",
                 "device": str(DEVICE),
+                "feature_extraction_ms": round(sum(feature_extraction_times), 2),
                 "results": image_results,
                 "consensus": self._consensus(image_results),
             }

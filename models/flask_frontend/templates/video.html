@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bird Model Lab — Video Analysis</title>
-  <meta name="description" content="Upload a bird video to run multimodal analysis. Frames are classified by all four vision models while the extracted audio is evaluated by all four audio models.">
+  <meta name="description" content="Upload a bird video to run multimodal analysis with the same four classifier families for both frame and audio features.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -16,7 +16,7 @@
       <div>
         <p class="kicker">MULTIMODAL EVALUATION LAB</p>
         <h1>Video intelligence, frame by frame.</h1>
-        <p class="lede">Upload a bird video and watch every model work simultaneously — vision models analyse 8 sampled frames while audio models process the extracted sound track. Results are fused into a single multimodal consensus.</p>
+        <p class="lede">Upload a bird video and compare the same four classifier families across sampled-frame embeddings and the extracted audio. Results are fused into a single multimodal consensus.</p>
       </div>
       <div class="system-chip"><span class="pulse"></span><span>Inference device</span><strong>{{ device }}</strong></div>
     </header>
@@ -37,7 +37,7 @@
         <span class="section-number">01</span>
         <div>
           <h2 id="uploadTitle">Upload a bird video</h2>
-          <p id="uploadHint">MP4, AVI, MOV, MKV, or WEBM. Eight evenly-spaced frames are sampled for the vision models; the full audio track is piped to the audio models.</p>
+          <p id="uploadHint">MP4, AVI, MOV, MKV, or WEBM. Sampled frames and the full audio track are evaluated with the same four classifier families.</p>
         </div>
       </div>
       <div class="dropzone" id="dropzone">

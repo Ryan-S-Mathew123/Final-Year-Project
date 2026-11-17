@@ -1,0 +1,47 @@
+{
+  "modality": "image",
+  "classes": [
+    "asian_koel",
+    "common_cuckoo",
+    "grey_junglefowl",
+    "indian_grey_hornbill",
+    "indian_peafowl",
+    "indian_robin",
+    "peregrine_falcon",
+    "rock_eagle_owl",
+    "rose_ringed_parakeet",
+    "spotted_dove",
+    "spotted_owlet",
+    "white_naped_woodpecker"
+  ],
+  "models": {
+    "Random Forest": {
+      "train_accuracy": 1.0,
+      "validation_accuracy": 0.928395061728395,
+      "validation_macro_f1": 0.933410197300832,
+      "test_accuracy": 0.9267241379310345,
+      "test_macro_f1": 0.92977838703429
+    },
+    "SVM": {
+      "train_accuracy": 1.0,
+      "validation_accuracy": 0.928395061728395,
+      "validation_macro_f1": 0.9339096590919856,
+      "test_accuracy": 0.9291871921182266,
+      "test_macro_f1": 0.9320545120653824
+    },
+    "K-Nearest Neighbors": {
+      "train_accuracy": 0.9976199920666402,
+      "validation_accuracy": 0.9320987654320988,
+      "validation_macro_f1": 0.9363773725593849,
+      "test_accuracy": 0.9291871921182266,
+      "test_macro_f1": 0.9321725458037907
+    },
+    "Gradient Boosting": {
+      "train_accuracy": 0.9936533121777072,
+      "validation_accuracy": 0.9030864197530865,
+      "validation_macro_f1": 0.9073189351201089,
+      "test_accuracy": 0.9008620689655172,
+      "test_macro_f1": 0.9046274897072445
+    }
+  }
+}
